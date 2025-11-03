@@ -5,7 +5,6 @@
     <title>WebAR Marker Test</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- A-Frame and AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
 
@@ -35,17 +34,20 @@
 
     <a-scene
       embedded
-      arjs="sourceType: webcam; debugUIEnabled: false;"
       vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true;"
+      arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/examples/marker-training/examples/camera_para.dat;"
+      device-orientation-permission-ui="enabled: true"
     >
-      <!-- Marker definition -->
+      <a-entity light="type: ambient; intensity: 1"></a-entity>
+      <a-entity light="type: directional; intensity: 0.8" position="0 1 0"></a-entity>
+
       <a-marker type="pattern" url="marker.patt">
-        <!-- 3D Model -->
         <a-entity
           gltf-model="test.glb"
-          scale="0.2 0.2 0.2"
+          scale="0.05 0.05 0.05"
           position="0 0 0"
-          rotation="0 0 0"
+          rotation="0 180 0"
         ></a-entity>
       </a-marker>
 
@@ -53,10 +55,11 @@
     </a-scene>
 
     <script>
-      // Hide loading screen once AR.js starts
-      document.querySelector("a-scene").addEventListener("loaded", () => {
-        document.getElementById("loading").style.display = "none";
-      });
+      document
+        .querySelector("a-scene")
+        .addEventListener("loaded", () => {
+          document.getElementById("loading").style.display = "none";
+        });
     </script>
   </body>
 </html>
