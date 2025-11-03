@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebAR Marker Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- A-Frame and AR.js -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #000;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="loading">Starting camera…</div>
+
+    <a-scene
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false;"
+      vr-mode-ui="enabled: false"
+    >
+      <!-- Marker definition -->
+      <a-marker type="pattern" url="marker.patt">
+        <!-- 3D Model -->
+        <a-entity
+          gltf-model="test.glb"
+          scale="0.2 0.2 0.2"
+          position="0 0 0"
+          rotation="0 0 0"
+        ></a-entity>
+      </a-marker>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+      // Hide loading screen once AR.js starts
+      document.querySelector("a-scene").addEventListener("loaded", () => {
+        document.getElementById("loading").style.display = "none";
+      });
+    </script>
+  </body>
+</html>
