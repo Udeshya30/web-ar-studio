@@ -2,24 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>WebAR Marker Test (Fixed Camera & Bright Scene)</title>
+    <title>Camera Feed Test (AR.js Minimal)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Pre-configure AR.js camera -->
-    <script>
-      window.ARjs = window.ARjs || {};
-      window.ARjs.Source = {
-        parameters: {
-          sourceType: "webcam",
-          sourceWidth: 1280,
-          sourceHeight: 720,
-          displayWidth: 1280,
-          displayHeight: 720,
-        },
-      };
-    </script>
-
-    <!-- A-Frame + AR.js -->
+    <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
 
@@ -27,105 +13,81 @@
       html,
       body {
         margin: 0;
-        padding: 0;
         height: 100%;
         overflow: hidden;
         background: #000;
-        font-family: system-ui, sans-serif;
+      }
+
+      /* Force video feed to look bright and full-screen */
+      video {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        object-fit: cover !important;
+        z-index: 1 !important;
+        filter: brightness(1.4) contrast(1.2);
+      }
+
+      /* A-Frame canvas on top */
+      canvas {
+        z-index: 2 !important;
       }
 
       #overlay {
         position: fixed;
         inset: 0;
+        background: rgba(0, 0, 0, 0.85);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        background: rgba(0, 0, 0, 0.9);
-        color: #fff;
-        z-index: 10;
+        color: white;
+        z-index: 5;
       }
 
       #overlay button {
         background: #0d6efd;
+        color: white;
         border: none;
-        color: #fff;
         padding: 12px 20px;
         border-radius: 6px;
         font-size: 1rem;
-        cursor: pointer;
         margin-top: 12px;
-      }
-
-      #overlay button:hover {
-        background: #0b5ed7;
-      }
-
-      #loading {
-        position: fixed;
-        inset: 0;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        background: #000;
-        color: #fff;
-        z-index: 9;
+        cursor: pointer;
       }
     </style>
   </head>
 
   <body>
-    <!-- Start Overlay -->
+    <!-- Start screen -->
     <div id="overlay">
-      <h2>WebAR Marker Test</h2>
-      <p>Tap below to start your AR experience</p>
-      <button id="startBtn">Start AR</button>
+      <h2>Camera Test</h2>
+      <p>Tap to start camera</p>
+      <button id="startBtn">Start</button>
     </div>
 
-    <!-- Loading indicator -->
-    <div id="loading">Starting camera…</div>
-
-    <!-- AR Scene -->
+    <!-- AR scene -->
     <a-scene
-      id="arScene"
+      id="scene"
       vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
-      arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;
+      renderer="antialias: true; alpha: true;"
+      arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;
             cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;"
       device-orientation-permission-ui="enabled: true"
-      style="width: 100vw; height: 100vh; display: none;"
+      style="display:none;"
     >
-      <!-- Ambient + Directional lights -->
-      <a-entity light="type: ambient; intensity: 1.6; color: #ffffff"></a-entity>
-      <a-entity
-        light="type: directional; intensity: 1.4; color: #ffffff"
-        position="1 1 1"
-      ></a-entity>
-
-      <!-- Marker -->
+      <!-- Marker outline only -->
       <a-marker type="pattern" url="marker.patt">
-        <!-- Debug cube -->
         <a-box
-          id="debugCube"
           position="0 0.5 0"
           depth="1"
           height="1"
           width="1"
-          color="#4CC3D9"
-          material="opacity:0.8;"
-          visible="true"
+          color="#00ff00"
+          material="opacity:0.3; wireframe:true;"
         ></a-box>
-
-        <!-- GLB model -->
-        <a-entity
-          id="modelEntity"
-          gltf-model="test.glb"
-          scale="0.05 0.05 0.05"
-          position="0 0 0"
-          rotation="0 180 0"
-          visible="false"
-          material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 1"
-        ></a-entity>
       </a-marker>
 
       <a-entity camera></a-entity>
@@ -133,42 +95,22 @@
 
     <script>
       const overlay = document.getElementById("overlay");
-      const startBtn = document.getElementById("startBtn");
-      const sceneEl = document.getElementById("arScene");
-      const loading = document.getElementById("loading");
-
-      startBtn.onclick = () => {
+      const scene = document.getElementById("scene");
+      document.getElementById("startBtn").onclick = () => {
         overlay.style.display = "none";
-        sceneEl.style.display = "block";
-        loading.style.display = "flex";
+        scene.style.display = "block";
       };
 
-      // hide loading once scene is ready
-      document.querySelector("a-scene").addEventListener("loaded", () => {
-        loading.style.display = "none";
-      });
-
-      // Adjust camera video to fit screen proportionally
+      // ensure video fits and brightens
       window.addEventListener("arjs-video-loaded", () => {
-        const video = document.querySelector("video");
-        if (video) {
-          video.style.objectFit = "contain";
-          video.style.width = "100vw";
-          video.style.height = "100vh";
-          video.style.position = "fixed";
-          video.style.top = "0";
-          video.style.left = "0";
+        const vid = document.querySelector("video");
+        if (vid) {
+          vid.style.objectFit = "cover";
+          vid.style.width = "100vw";
+          vid.style.height = "100vh";
+          vid.style.filter = "brightness(1.4) contrast(1.2)";
+          vid.style.zIndex = "1";
         }
-      });
-
-      // Switch from cube to model after marker found
-      document.addEventListener("markerFound", () => {
-        const cube = document.getElementById("debugCube");
-        const model = document.getElementById("modelEntity");
-        setTimeout(() => {
-          cube.setAttribute("visible", "false");
-          model.setAttribute("visible", "true");
-        }, 1500);
       });
     </script>
   </body>
