@@ -1,117 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Camera Feed Test (AR.js Minimal)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Test Fixed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- A-Frame & AR.js -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+  <!-- A-Frame + AR.js -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: system-ui, sans-serif;
+    }
+
+    /* Fullscreen Camera */
+    video {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 1 !important;
+
+      /* Softer filter than before */
+      filter: brightness(1.15) contrast(1.05);
+    }
+
+    /* Transparent Canvas — no black area */
+    canvas {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: transparent !important;
+      z-index: 2 !important;
+    }
+
+    /* Block VR UI button */
+    .a-enter-vr-button, .a-enter-ar-button {
+      display: none !important;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      z-index: 5;
+    }
+
+    #overlay button {
+      background: #0d6efd;
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Tap-to-Start Overlay -->
+  <div id="overlay">
+    <h2>Camera Good ✅</h2>
+    <p>Tap to start AR</p>
+    <button id="startBtn">Start</button>
+  </div>
+
+  <!-- AR Scene -->
+  <a-scene
+    id="scene"
+    embedded
+    renderer="alpha:true; antialias:true;"
+    vr-mode-ui="enabled:false"
+    arjs="sourceType: webcam; debugUIEnabled:false;"
+    device-orientation-permission-ui="enabled:true"
+    style="display:none;"
+  >
+    <!-- Just marker wireframe -->
+    <a-marker preset="hiro">
+      <a-box color="#00ff00" position="0 0.5 0"
+             height="1" width="1" depth="1"
+             material="wireframe:true;">
+      </a-box>
+    </a-marker>
+      
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    const overlay = document.getElementById("overlay");
+    const scene = document.getElementById("scene");
+
+    document.getElementById("startBtn").onclick = () => {
+      overlay.style.display = "none";
+      scene.style.display = "block";
+    };
+
+    window.addEventListener("arjs-video-loaded", () => {
+      const vid = document.querySelector("video");
+      if (vid) {
+        vid.style.width = "100vw";
+        vid.style.height = "100vh";
+        vid.style.objectFit = "cover";
       }
-
-      /* Force video feed to look bright and full-screen */
-      video {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        z-index: 1 !important;
-        filter: brightness(1.4) contrast(1.2);
-      }
-
-      /* A-Frame canvas on top */
-      canvas {
-        z-index: 2 !important;
-      }
-
-      #overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.85);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        z-index: 5;
-      }
-
-      #overlay button {
-        background: #0d6efd;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 6px;
-        font-size: 1rem;
-        margin-top: 12px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-
-  <body>
-    <!-- Start screen -->
-    <div id="overlay">
-      <h2>Camera Test</h2>
-      <p>Tap to start camera</p>
-      <button id="startBtn">Start</button>
-    </div>
-
-    <!-- AR scene -->
-    <a-scene
-      id="scene"
-      vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true;"
-      arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;
-            cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;"
-      device-orientation-permission-ui="enabled: true"
-      style="display:none;"
-    >
-      <!-- Marker outline only -->
-      <a-marker type="pattern" url="marker.patt">
-        <a-box
-          position="0 0.5 0"
-          depth="1"
-          height="1"
-          width="1"
-          color="#00ff00"
-          material="opacity:0.3; wireframe:true;"
-        ></a-box>
-      </a-marker>
-
-      <a-entity camera></a-entity>
-    </a-scene>
-
-    <script>
-      const overlay = document.getElementById("overlay");
-      const scene = document.getElementById("scene");
-      document.getElementById("startBtn").onclick = () => {
-        overlay.style.display = "none";
-        scene.style.display = "block";
-      };
-
-      // ensure video fits and brightens
-      window.addEventListener("arjs-video-loaded", () => {
-        const vid = document.querySelector("video");
-        if (vid) {
-          vid.style.objectFit = "cover";
-          vid.style.width = "100vw";
-          vid.style.height = "100vh";
-          vid.style.filter = "brightness(1.4) contrast(1.2)";
-          vid.style.zIndex = "1";
-        }
-      });
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
