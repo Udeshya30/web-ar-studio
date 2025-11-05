@@ -1,117 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Camera Feed Test (AR.js Minimal)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="utf-8" />
+  <title>WebAR — Marker + Auto-fit Model</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- A-Frame & AR.js -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
-
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
+  <!-- AR.js camera overrides (keeps camera framing nice) -->
+  <script>
+    window.ARjs = window.ARjs || {};
+    window.ARjs.Source = {
+      parameters: {
+        sourceType: "webcam",
+        sourceWidth: 1280,
+        sourceHeight: 720,
+        displayWidth: 1280,
+        displayHeight: 720
       }
+    };
+  </script>
 
-      /* Force video feed to look bright and full-screen */
-      video {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        z-index: 1 !important;
-        filter: brightness(1.4) contrast(1.2);
-      }
+  <!-- A-Frame + AR.js -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
 
-      /* A-Frame canvas on top */
-      canvas {
-        z-index: 2 !important;
-      }
+  <style>
+    html,body { margin:0; height:100%; overflow:hidden; background:#000; }
+    video {
+      position:fixed !important;
+      top:0; left:0;
+      width:100vw !important; height:100vh !important;
+      object-fit:cover !important;
+      z-index:1 !important;
+      filter: brightness(1.12) contrast(1.04);
+    }
+    canvas {
+      position:fixed !important;
+      top:0; left:0;
+      width:100vw !important; height:100vh !important;
+      background:transparent !important;
+      z-index:2 !important;
+    }
 
-      #overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.85);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        z-index: 5;
-      }
+    /* small debug panel */
+    #ui {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 10;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+    }
+    #ui input[type="range"] { width:120px; }
+    #overlay {
+      position: fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.85); color:white; flex-direction:column;
+    }
+    #overlay button { padding:10px 16px; border-radius:8px; background:#0d6efd; color:#fff; border:none; }
+    .small { font-size:12px; color:#ddd; margin-top:6px; }
+  </style>
+</head>
+<body>
 
-      #overlay button {
-        background: #0d6efd;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 6px;
-        font-size: 1rem;
-        margin-top: 12px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
+  <!-- start overlay -->
+  <div id="overlay">
+    <h2>WebAR — Test your marker</h2>
+    <p class="small">Tap to start. Make sure your printed marker is flat and lit.</p>
+    <button id="startBtn">Start AR</button>
+  </div>
 
-  <body>
-    <!-- Start screen -->
-    <div id="overlay">
-      <h2>Camera Test</h2>
-      <p>Tap to start camera</p>
-      <button id="startBtn">Start</button>
+  <!-- small UI for adjustments -->
+  <div id="ui" hidden>
+    <div><strong>Debug / Fit controls</strong></div>
+    <div style="margin-top:8px;">
+      <label>Marker size (meters): <input id="markerSize" type="number" value="0.12" step="0.01" style="width:72px" /> m</label>
     </div>
+    <div style="margin-top:6px;">
+      <label>Scale multiplier: <input id="scaleMul" type="range" min="0.5" max="4" step="0.01" value="1" /></label>
+    </div>
+    <div style="margin-top:6px;">
+      <label>Y offset (m): <input id="yOffset" type="range" min="-0.5" max="0.5" step="0.01" value="0" /></label>
+    </div>
+    <div style="margin-top:8px;">
+      <button id="showCubeBtn">Show Cube</button>
+      <button id="showModelBtn">Show Model</button>
+    </div>
+    <div class="small" id="log"></div>
+  </div>
 
-    <!-- AR scene -->
-    <a-scene
-      id="scene"
-      vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true;"
-      arjs="sourceType: webcam; debugUIEnabled: true; trackingMethod: best;
-            cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;"
-      device-orientation-permission-ui="enabled: true"
-      style="display:none;"
-    >
-      <!-- Marker outline only -->
-      <a-marker type="pattern" url="marker.patt">
-        <a-box
-          position="0 0.5 0"
-          depth="1"
-          height="1"
-          width="1"
-          color="#00ff00"
-          material="opacity:0.3; wireframe:true;"
-        ></a-box>
-      </a-marker>
+  <!-- AR scene: using pattern marker.patt & test.glb in public/ -->
+  <a-scene id="scene"
+           vr-mode-ui="enabled:false"
+           renderer="antialias:true; alpha:true; logarithmicDepthBuffer:true"
+           arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;
+                 cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;"
+           device-orientation-permission-ui="enabled: true"
+           style="display:none; width:100vw; height:100vh;">
+    <!-- lights so model looks bright -->
+    <a-entity light="type: ambient; intensity: 1.5; color:#ffffff"></a-entity>
+    <a-entity light="type: directional; intensity: 1.2; color:#ffffff" position="1 1 0"></a-entity>
 
-      <a-entity camera></a-entity>
-    </a-scene>
+    <!-- marker: your custom pattern file -->
+    <a-marker type="pattern" url="marker.patt" id="marker">
+      <!-- debug cube (visible at start) -->
+      <a-box id="debugCube" position="0 0.06 0" depth="0.12" height="0.12" width="0.12"
+             material="color:#4CC3D9; opacity:0.75;"></a-box>
 
-    <script>
-      const overlay = document.getElementById("overlay");
-      const scene = document.getElementById("scene");
-      document.getElementById("startBtn").onclick = () => {
-        overlay.style.display = "none";
-        scene.style.display = "block";
-      };
+      <!-- model entity (hidden until placed) -->
+      <a-entity id="modelEntity" visible="false" gltf-model="test.glb"></a-entity>
+    </a-marker>
 
-      // ensure video fits and brightens
-      window.addEventListener("arjs-video-loaded", () => {
-        const vid = document.querySelector("video");
-        if (vid) {
-          vid.style.objectFit = "cover";
-          vid.style.width = "100vw";
-          vid.style.height = "100vh";
-          vid.style.filter = "brightness(1.4) contrast(1.2)";
-          vid.style.zIndex = "1";
-        }
-      });
-    </script>
-  </body>
+    <a-entity camera></a-entity>
+  </a-scene>
+
+<script>
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const sceneEl = document.getElementById('scene');
+  const ui = document.getElementById('ui');
+  const logEl = document.getElementById('log');
+
+  startBtn.onclick = () => {
+    overlay.style.display = 'none';
+    sceneEl.style.display = 'block';
+    ui.hidden = false;
+    log('AR starting...');
+  };
+
+  function log(msg){
+    console.log(msg);
+    if(logEl) logEl.textContent = msg;
+  }
+
+  // Wait until A-Frame/AR.js video created: make sure video visible & not dark
+  window.addEventListener('arjs-video-loaded', () => {
+    const vid = document.querySelector('video');
+    if(vid){
+      vid.style.objectFit = 'cover';
+      vid.style.width = '100vw';
+      vid.style.height = '100vh';
+      vid.style.filter = 'brightness(1.08) contrast(1.03)';
+      vid.style.zIndex = '1';
+      log('Video ready');
+    }
+  });
+
+  // reference DOM nodes
+  const modelEntity = document.getElementById('modelEntity');
+  const debugCube = document.getElementById('debugCube');
+  const markerEl = document.getElementById('marker');
+
+  // helper: when model loads, auto-fit using bounding box
+  modelEntity.addEventListener('model-loaded', () => {
+    log('Model loaded: computing bounds...');
+    // use the underlying THREE object to compute bounding box
+    const obj = modelEntity.getObject3D('mesh') || modelEntity.getObject3D('model') || modelEntity.object3D;
+    if(!obj){ log('Could not find model three object'); return; }
+
+    // compute bbox
+    const bbox = new THREE.Box3().setFromObject(obj);
+    const size = new THREE.Vector3();
+    bbox.getSize(size);
+    log(`Model bbox size (m): x=${size.x.toFixed(3)} y=${size.y.toFixed(3)} z=${size.z.toFixed(3)}`);
+
+    // target marker real-world width (meters) — user can tweak in UI
+    const markerSizeInput = document.getElementById('markerSize');
+    let markerSize = parseFloat(markerSizeInput.value) || 0.12;
+    // assume model's x dimension is intended width; compute scale factor
+    const modelWidth = Math.max(size.x, size.z); // use largest horizontal dim
+    let scaleFactor = 1;
+    if(modelWidth > 0) scaleFactor = (markerSize / modelWidth);
+
+    // apply UI multiplier
+    const mul = parseFloat(document.getElementById('scaleMul').value) || 1.0;
+    scaleFactor *= mul;
+
+    // set scale (uniform)
+    modelEntity.setAttribute('scale', `${scaleFactor} ${scaleFactor} ${scaleFactor}`);
+    log(`Applied scale factor: ${scaleFactor.toFixed(3)} (marker ${markerSize}m)`);
+
+    // reposition so the model sits on marker plane (marker y=0). find bbox center
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+    // center.y is model center relative to model origin; compute bottom Y after scaling
+    const bottomY = (center.y - size.y / 2) * scaleFactor;
+    // desired Y so bottom sits at marker's Y = 0 (slightly lift to avoid z-fighting)
+    const yOffsetUI = parseFloat(document.getElementById('yOffset').value) || 0;
+    const desiredY = -bottomY + 0.001 + yOffsetUI;
+    // set position
+    modelEntity.setAttribute('position', `0 ${desiredY.toFixed(4)} 0`);
+    log(`Model positioned at y=${desiredY.toFixed(4)}`);
+  });
+
+  // marker found/lost events — A-Frame doesn't fire 'markerFound' on document reliably; use marker events
+  markerEl.addEventListener('markerFound', () => {
+    log('Marker found');
+    // show debug cube first
+    debugCube.setAttribute('visible', 'true');
+    // after short delay hide cube and show model
+    setTimeout(() => {
+      debugCube.setAttribute('visible', 'false');
+      modelEntity.setAttribute('visible', 'true');
+    }, 1000);
+  });
+  markerEl.addEventListener('markerLost', () => {
+    log('Marker lost');
+    modelEntity.setAttribute('visible', 'false');
+    debugCube.setAttribute('visible', 'true');
+  });
+
+  // UI controls
+  document.getElementById('scaleMul').addEventListener('input', () => {
+    // retrigger model-loaded logic if model already loaded
+    // simplest way: if loaded, call 'model-loaded' handler manually
+    if(modelEntity.getAttribute('gltf-model')) {
+      modelEntity.emit('model-loaded'); // triggers handler above
+    }
+  });
+  document.getElementById('markerSize').addEventListener('change', () => {
+    if(modelEntity.getAttribute('gltf-model')) modelEntity.emit('model-loaded');
+  });
+  document.getElementById('yOffset').addEventListener('input', () => {
+    if(modelEntity.getAttribute('gltf-model')) modelEntity.emit('model-loaded');
+  });
+
+  document.getElementById('showCubeBtn').onclick = () => {
+    debugCube.setAttribute('visible', 'true');
+    modelEntity.setAttribute('visible', 'false');
+  };
+  document.getElementById('showModelBtn').onclick = () => {
+    debugCube.setAttribute('visible', 'false');
+    modelEntity.setAttribute('visible', 'true');
+  };
+
+</script>
+
+</body>
 </html>
