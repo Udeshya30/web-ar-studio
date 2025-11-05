@@ -2,12 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>WebAR Marker Test</title>
+    <title>WebAR Marker Test (Fixed Camera & Bright Scene)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Configure AR.js camera before load -->
+    <!-- Pre-configure AR.js camera -->
     <script>
-      // Override AR.js camera defaults
       window.ARjs = window.ARjs || {};
       window.ARjs.Source = {
         parameters: {
@@ -25,8 +24,11 @@
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
 
     <style>
+      html,
       body {
         margin: 0;
+        padding: 0;
+        height: 100%;
         overflow: hidden;
         background: #000;
         font-family: system-ui, sans-serif;
@@ -34,92 +36,87 @@
 
       #overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.9);
+        inset: 0;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        flex-direction: column;
+        background: rgba(0, 0, 0, 0.9);
         color: #fff;
         z-index: 10;
       }
 
-      button {
+      #overlay button {
         background: #0d6efd;
-        color: white;
         border: none;
+        color: #fff;
         padding: 12px 20px;
         border-radius: 6px;
         font-size: 1rem;
         cursor: pointer;
-        margin-top: 10px;
+        margin-top: 12px;
       }
 
-      button:hover {
+      #overlay button:hover {
         background: #0b5ed7;
       }
 
       #loading {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: #000;
-        color: white;
+        inset: 0;
         display: none;
         justify-content: center;
         align-items: center;
-        font-family: sans-serif;
+        background: #000;
+        color: #fff;
         z-index: 9;
       }
     </style>
   </head>
 
   <body>
-    <!-- Start overlay -->
+    <!-- Start Overlay -->
     <div id="overlay">
       <h2>WebAR Marker Test</h2>
-      <p>Tap below to start the AR experience</p>
+      <p>Tap below to start your AR experience</p>
       <button id="startBtn">Start AR</button>
     </div>
 
-    <!-- Loading text while camera starts -->
+    <!-- Loading indicator -->
     <div id="loading">Starting camera…</div>
 
-    <!-- AR scene -->
+    <!-- AR Scene -->
     <a-scene
       id="arScene"
-      embedded
       vr-mode-ui="enabled: false"
       renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
       arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;
-            cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;
-            patternRatio: 0.75;"
+            cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat;"
       device-orientation-permission-ui="enabled: true"
       style="width: 100vw; height: 100vh; display: none;"
     >
-      <!-- Lighting -->
-      <a-entity light="type: ambient; intensity: 1"></a-entity>
+      <!-- Ambient + Directional lights -->
+      <a-entity light="type: ambient; intensity: 1.6; color: #ffffff"></a-entity>
       <a-entity
-        light="type: directional; intensity: 0.8"
-        position="0 1 0"
+        light="type: directional; intensity: 1.4; color: #ffffff"
+        position="1 1 1"
       ></a-entity>
 
       <!-- Marker -->
       <a-marker type="pattern" url="marker.patt">
-        <!-- Debug Cube -->
+        <!-- Debug cube -->
         <a-box
           id="debugCube"
           position="0 0.5 0"
-          material="color: #4CC3D9; opacity: 0.8;"
+          depth="1"
+          height="1"
+          width="1"
+          color="#4CC3D9"
+          material="opacity:0.8;"
           visible="true"
         ></a-box>
 
-        <!-- 3D Model -->
+        <!-- GLB model -->
         <a-entity
           id="modelEntity"
           gltf-model="test.glb"
@@ -127,6 +124,7 @@
           position="0 0 0"
           rotation="0 180 0"
           visible="false"
+          material="color: #ffffff; emissive: #ffffff; emissiveIntensity: 1"
         ></a-entity>
       </a-marker>
 
@@ -145,19 +143,32 @@
         loading.style.display = "flex";
       };
 
-      // Hide loading when AR scene is ready
+      // hide loading once scene is ready
       document.querySelector("a-scene").addEventListener("loaded", () => {
         loading.style.display = "none";
       });
 
-      // Toggle cube/model after few seconds for testing
+      // Adjust camera video to fit screen proportionally
+      window.addEventListener("arjs-video-loaded", () => {
+        const video = document.querySelector("video");
+        if (video) {
+          video.style.objectFit = "contain";
+          video.style.width = "100vw";
+          video.style.height = "100vh";
+          video.style.position = "fixed";
+          video.style.top = "0";
+          video.style.left = "0";
+        }
+      });
+
+      // Switch from cube to model after marker found
       document.addEventListener("markerFound", () => {
         const cube = document.getElementById("debugCube");
         const model = document.getElementById("modelEntity");
         setTimeout(() => {
           cube.setAttribute("visible", "false");
           model.setAttribute("visible", "true");
-        }, 2000); // 2s delay to confirm cube tracking first
+        }, 1500);
       });
     </script>
   </body>
